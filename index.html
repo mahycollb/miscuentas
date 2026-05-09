@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finanzas Pro V11.3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .active-tab { color: #4f46e5; border-bottom: 3px solid #4f46e5; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; }
+    </style>
+</head>
+<body>
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-[90%] pointer-events-none"></div>
+
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 space-y-8 animate-in border border-slate-50">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-indigo-600 rounded-[2.2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-100 text-white">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h1 id="auth-title" class="text-2xl font-black text-slate-900">Finanzas Pro</h1>
+                <p id="auth-subtitle" class="text-slate-400 text-sm mt-2 tracking-tight">Inicia sesión</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="user-input" placeholder="Usuario" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all">
+                <input type="password" id="pass-input" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all">
+                <button onclick="manejarAuth()" id="auth-button" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl uppercase text-[10px] tracking-[0.2em] shadow-2xl active:scale-95 transition-transform">Entrar</button>
+            </div>
+            <center><button onclick="toggleAuth()" id="toggle-btn" class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">¿No tienes cuenta? Regístrate</button></center>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden max-w-md mx-auto bg-white min-h-screen flex flex-col shadow-2xl animate-in">
+        <header class="pt-12 pb-8 px-8 bg-slate-900 text-white flex justify-between items-end rounded-b-[2.5rem]">
+            <div>
+                <h1 class="text-2xl font-black tracking-tight">Balance</h1>
+                <p id="welcome-msg" class="text-indigo-400 text-[10px] font-black uppercase tracking-widest"></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleTasa()" class="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700 text-[10px] font-black text-indigo-400">
+                    <span id="header-tasa-val">Bs 500,46</span>
+                </button>
+                <button onclick="location.reload()" class="p-3 bg-slate-800 rounded-xl border border-slate-700 active:rotate-180 transition-transform duration-500">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
+                </button>
+            </div>
+        </header>
+
+        <nav class="flex px-4 bg-white mt-4 border-b border-slate-50">
+            <button onclick="switchTab('registro')" id="tab-reg" class="flex-1 py-4 text-[10px] font-black uppercase active-tab transition-all">Cargar</button>
+            <button onclick="switchTab('reporte')" id="tab-rep" class="flex-1 py-4 text-[10px] font-black uppercase text-slate-400 transition-all">Totales</button>
+        </nav>
+
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+            <section id="view-registro" class="space-y-6">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-5">
+                    <input type="text" id="desc" placeholder="Descripción" class="w-full bg-slate-50 rounded-2xl p-4 text-sm outline-none focus:bg-white transition-all">
+                    <div class="flex w-full gap-2">
+                        <div class="w-[70%]">
+                            <input type="number" id="monto" placeholder="Monto" class="w-full bg-slate-50 rounded-2xl p-4 text-sm font-black outline-none focus:bg-white transition-all">
+                        </div>
+                        <div class="w-[30%]">
+                            <select id="moneda" class="w-full bg-slate-50 rounded-2xl p-4 pr-8 text-[10px] font-black outline-none border-none">
+                                <option value="USD">$</option>
+                                <option value="VES">Bs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-ing" onclick="setTipo('ingreso')" class="py-4 rounded-2xl font-black text-[10px] uppercase bg-indigo-600 text-white shadow-lg transition-all">Ingreso</button>
+                        <button id="btn-gas" onclick="setTipo('gasto')" class="py-4 rounded-2xl font-black text-[10px] uppercase bg-slate-100 text-slate-400 transition-all">Gasto</button>
+                    </div>
+                    <button onclick="agregar()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all">Registrar</button>
+                </div>
+                <div id="lista" class="space-y-3 pb-8"></div>
+            </section>
+
+            <section id="view-reporte" class="hidden space-y-6">
+                <div id="card-balance" class="p-10 bg-indigo-600 text-white rounded-[3.5rem] text-center shadow-2xl transition-all duration-500">
+                    <p class="text-indigo-200 text-[9px] font-black uppercase mb-2 tracking-widest">Disponible</p>
+                    <p id="bal-val" class="text-5xl font-black tracking-tighter">$0.00</p>
+                    <p id="bal-ves" class="text-white/70 text-xs font-bold mt-2">Bs 0.00</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 text-center shadow-sm">
+                        <p class="text-slate-400 text-[8px] font-black uppercase mb-2 tracking-widest">Ingresos</p>
+                        <p id="total-ing" class="text-lg font-black text-emerald-500">$0.00</p>
+                        <p id="total-ing-ves" class="text-[9px] font-bold text-slate-400 mt-1">Bs 0.00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 text-center shadow-sm">
+                        <p class="text-slate-400 text-[8px] font-black uppercase mb-2 tracking-widest">Gastos</p>
+                        <p id="total-gas" class="text-lg font-black text-rose-500">$0.00</p>
+                        <p id="total-gas-ves" class="text-[9px] font-bold text-slate-400 mt-1">Bs 0.00</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="tasa-modal" class="hidden modal-overlay animate-in">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center space-y-6">
+            <h3 class="text-xl font-black text-slate-900">Tasa del Día</h3>
+            <input type="number" id="tasa-input" step="any" class="w-full p-5 bg-slate-50 rounded-2xl text-center text-2xl font-black outline-none border-2 border-indigo-500">
+            <div class="flex gap-2">
+                <button onclick="toggleTasa()" class="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-bold">Cerrar</button>
+                <button onclick="guardarTasa()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasa = 500.46; let movimientos = []; let tipo = 'ingreso'; let user = null; let isLogin = true;
+
+        function notify(m, t='error') {
+            const toast = document.createElement('div');
+            toast.className = `p-4 mb-2 rounded-2xl text-white text-center text-[10px] font-bold shadow-xl animate-in ${t==='error'?'bg-rose-500':'bg-slate-800'}`;
+            toast.innerText = m;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function toggleAuth() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? "Finanzas Pro" : "Crear Cuenta";
+            document.getElementById('auth-button').innerText = isLogin ? "Entrar" : "Registrarse";
+            document.getElementById('toggle-btn').innerText = isLogin ? "¿No tienes cuenta? Regístrate" : "Ya tengo cuenta";
+        }
+
+        function manejarAuth() {
+            const u = document.getElementById('user-input').value.trim().toLowerCase();
+            const p = document.getElementById('pass-input').value;
+            if(!u || !p) return notify("Completa los campos");
+            const stored = localStorage.getItem(`u_${u}`);
+            if(isLogin) {
+                if(stored && JSON.parse(stored).p === p) login(u);
+                else notify("Datos incorrectos");
+            } else {
+                if(stored) return notify("Usuario ocupado");
+                localStorage.setItem(`u_${u}`, JSON.stringify({u, p}));
+                login(u);
+            }
+        }
+
+        function login(u) {
+            user = u;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = `Hola, ${u}`;
+            movimientos = JSON.parse(localStorage.getItem(`d_${u}`)) || [];
+            const savedTasa = localStorage.getItem(`t_${u}`);
+            if(savedTasa) { tasa = parseFloat(savedTasa); document.getElementById('header-tasa-val').innerText = `Bs ${tasa}`; }
+            render();
+        }
+
+        function setTipo(t) {
+            tipo = t;
+            document.getElementById('btn-ing').className = t === 'ingreso' ? "py-4 rounded-2xl font-black text-[10px] uppercase bg-indigo-600 text-white shadow-lg transition-all" : "py-4 rounded-2xl font-black text-[10px] uppercase bg-slate-100 text-slate-400 transition-all";
+            document.getElementById('btn-gas').className = t === 'gasto' ? "py-4 rounded-2xl font-black text-[10px] uppercase bg-rose-500 text-white shadow-lg transition-all" : "py-4 rounded-2xl font-black text-[10px] uppercase bg-slate-100 text-slate-400 transition-all";
+        }
+
+        function agregar() {
+            const d = document.getElementById('desc').value;
+            const m = parseFloat(document.getElementById('monto').value);
+            const mon = document.getElementById('moneda').value;
+            if(!d || !m) return notify("Faltan datos");
+            movimientos.push({d, m, mon, tipo, id: Date.now()});
+            localStorage.setItem(`d_${user}`, JSON.stringify(movimientos));
+            document.getElementById('desc').value = ''; document.getElementById('monto').value = '';
+            render(); notify("¡Registrado!", "success");
+        }
+
+        function eliminar(id) {
+            if(confirm("¿Borrar este registro?")) {
+                movimientos = movimientos.filter(x => x.id !== id);
+                localStorage.setItem(`d_${user}`, JSON.stringify(movimientos));
+                render();
+            }
+        }
+
+        function render() {
+            const lista = document.getElementById('lista');
+            lista.innerHTML = movimientos.slice().reverse().map(m => {
+                const vUSD = m.mon === 'VES' ? m.m / tasa : m.m;
+                return `<div class="flex justify-between items-center p-5 bg-white rounded-3xl border border-slate-50 shadow-sm animate-in">
+                    <div class="flex items-center gap-3">
+                        <button onclick="eliminar(${m.id})" class="text-slate-200 text-xl">×</button>
+                        <div><p class="font-bold text-sm text-slate-800">${m.d}</p><p class="text-[9px] text-slate-400 font-black uppercase">${m.mon} ${m.m}</p></div>
+                    </div>
+                    <p class="text-sm font-black ${m.tipo==='ingreso'?'text-emerald-500':'text-rose-500'}">${m.tipo==='ingreso'?'+':'-'}$${vUSD.toFixed(2)}</p>
+                </div>`;
+            }).join('');
+            calc();
+        }
+
+        function calc() {
+            let ti = 0, tg = 0;
+            movimientos.forEach(m => {
+                const v = m.mon === 'VES' ? m.m / tasa : m.m;
+                if(m.tipo === 'ingreso') ti += v; else tg += v;
+            });
+            const neto = ti - tg;
+            
+            // CORRECCIÓN DE FORMATO AQUÍ
+            document.getElementById('bal-val').innerText = `$${neto.toFixed(2)}`;
+            document.getElementById('bal-ves').innerText = `Bs ${(neto * tasa).toFixed(2)}`;
+            
+            document.getElementById('total-ing').innerText = `$${ti.toFixed(2)}`;
+            document.getElementById('total-ing-ves').innerText = `Bs ${(ti * tasa).toFixed(2)}`;
+            
+            document.getElementById('total-gas').innerText = `$${tg.toFixed(2)}`;
+            document.getElementById('total-gas-ves').innerText = `Bs ${(tg * tasa).toFixed(2)}`;
+            
+            document.getElementById('card-balance').style.backgroundColor = neto < 0 ? '#f43f5e' : '#4f46e5';
+        }
+
+        function toggleTasa() { document.getElementById('tasa-modal').classList.toggle('hidden'); document.getElementById('tasa-input').value = tasa; }
+        function guardarTasa() { tasa = parseFloat(document.getElementById('tasa-input').value); localStorage.setItem(`t_${user}`, tasa); document.getElementById('header-tasa-val').innerText = `Bs ${tasa}`; toggleTasa(); render(); }
+        function switchTab(t) {
+            document.getElementById('view-registro').classList.toggle('hidden', t !== 'registro');
+            document.getElementById('view-reporte').classList.toggle('hidden', t !== 'reporte');
+            document.getElementById('tab-reg').classList.toggle('active-tab', t === 'registro');
+            document.getElementById('tab-rep').classList.toggle('active-tab', t === 'reporte');
+        }
+    </script>
+</body>
+</html>
